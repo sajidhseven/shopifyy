@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  role         String   @default("CUSTOMER")
+  passwordHash String
+  // (no "name" in the version Prisma actually generated)
+  // Back-relation to CartItem (required!)
+  cartItems    CartItem[]
+  // Back-relation to Order
+  orders       Order[]
+}
+
+
+model Product {
+  id        String      @id @default(cuid())
+  name      String
+  price     Int
+  image     String
+  createdAt DateTime    @default(now())
+
+  // RELATIONS
+  cartItems CartItem[]  // Product has many CartItem
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+
+  // RELATION: many CartItem -> one User
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int      // must match User.id which is Int
+
+  // RELATION: many CartItem -> one Product
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+}
+
+
+model Order {
+  id        String      @id @default(cuid())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    Int
+  total     Int
+  status    String      @default("PENDING")
+  address   String
+  createdAt DateTime    @default(now())
+
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+
+  productId String
+  name      String
+  price     Int
+  qty       Int
+}
